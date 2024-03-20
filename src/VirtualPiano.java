@@ -5,6 +5,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -54,10 +56,10 @@ public class VirtualPiano {
             @Override
             public void keyPressed(KeyEvent e) {
                 KeyNote keyToNote = KeyNote.fromKey(e.getKeyChar());
-                if (keyToNote != null && !activeNotes.contains(keyToNote.getNote())) {
-                    playSound(keyToNote.getNote());
-                    activeNotes.add(keyToNote.getNote());
-                    noteToButton.get(keyToNote.getNote()).setBackground(Color.GREEN); // Change color on key press
+                if (keyToNote != null && !activeNotes.contains(keyToNote.getMidiNote())) {
+                    playSound(keyToNote.getMidiNote());
+                    activeNotes.add(keyToNote.getMidiNote());
+                    noteToButton.get(keyToNote.getMidiNote()).setBackground(Color.GREEN); // Change color on key press
                 }
             }
 
@@ -71,9 +73,9 @@ public class VirtualPiano {
             public void keyReleased(KeyEvent e) {
                 KeyNote keyToNote = KeyNote.fromKey(e.getKeyChar());
                 if (keyToNote != null) {
-                    stopSound(keyToNote.getNote());
-                    activeNotes.remove(keyToNote.getNote());
-                    noteToButton.get(keyToNote.getNote()).setBackground(keyToNote.isWhiteKey() ? Color.WHITE : Color.BLACK); // Revert color on key release
+                    stopSound(keyToNote.getMidiNote());
+                    activeNotes.remove(keyToNote.getMidiNote());
+                    noteToButton.get(keyToNote.getMidiNote()).setBackground(keyToNote.isWhiteKey() ? Color.WHITE : Color.BLACK); // Revert color on key release
                 }
             }
         });
@@ -84,11 +86,31 @@ public class VirtualPiano {
             whiteKey.setBounds(i * 60, 0, 60, 180);
             whiteKey.setBackground(Color.WHITE);
             KeyNote keyNote = KeyNote.values()[i];
-            whiteKey.setText(keyNote.getKeyboardKey());
+            String buttonText = "<html>" + keyNote.getKeyboardKey() + "<br/>" + keyNote.getPianoNote() + "</html>";
+            whiteKey.setText(buttonText);
             whiteKey.setVerticalAlignment(SwingConstants.BOTTOM);
             layeredPane.add(whiteKey, JLayeredPane.DEFAULT_LAYER);
-            noteToButton.put(keyNote.getNote(), whiteKey);
+            noteToButton.put(keyNote.getMidiNote(), whiteKey);
             whiteKey.setFocusable(false);
+
+            // Add mouse listener to the white key
+            whiteKey.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    if (!activeNotes.contains(keyNote.getMidiNote())) {
+                        playSound(keyNote.getMidiNote());
+                        activeNotes.add(keyNote.getMidiNote());
+                        whiteKey.setBackground(Color.GREEN);
+                    }
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    stopSound(keyNote.getMidiNote());
+                    activeNotes.remove(keyNote.getMidiNote());
+                    whiteKey.setBackground(Color.WHITE);
+                }
+            });
         }
 
         // Add black keys
@@ -113,12 +135,32 @@ public class VirtualPiano {
             blackKey.setForeground(Color.WHITE);
             blackKey.setBackground(Color.BLACK);
             KeyNote keyNote = KeyNote.values()[25 + blackKeyIndex];
-            blackKey.setText(keyNote.getKeyboardKey());
+            String buttonText = "<html>" + keyNote.getKeyboardKey() + "<br/>" + keyNote.getPianoNote() + "</html>";
+            blackKey.setText(buttonText);
             blackKey.setVerticalAlignment(SwingConstants.BOTTOM);
             layeredPane.add(blackKey, JLayeredPane.PALETTE_LAYER);
-            noteToButton.put(keyNote.getNote(), blackKey);
+            noteToButton.put(keyNote.getMidiNote(), blackKey);
             blackKeyIndex++;
             blackKey.setFocusable(false);
+
+            // Add mouse listener to the black key
+            blackKey.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mousePressed(MouseEvent e) {
+                    if (!activeNotes.contains(keyNote.getMidiNote())) {
+                        playSound(keyNote.getMidiNote());
+                        activeNotes.add(keyNote.getMidiNote());
+                        blackKey.setBackground(Color.GREEN);
+                    }
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    stopSound(keyNote.getMidiNote());
+                    activeNotes.remove(keyNote.getMidiNote());
+                    blackKey.setBackground(Color.BLACK);
+                }
+            });
         }
 
         int[] instruments = {0, 32, 40, 56, 80, 88, 104}; // Array of instrument numbers
